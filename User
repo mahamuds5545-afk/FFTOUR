@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF Tournament - Player Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #ff6600;
+            --secondary: #1a1a2e;
+            --accent: #00ccff;
+            --success: #00ff88;
+            --warning: #ffcc00;
+            --danger: #ff3300;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .header-marquee {
+            background: linear-gradient(90deg, var(--primary), var(--danger));
+            color: white;
+            padding: 8px 0;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .main-nav {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .nav-brand {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 22px;
+        }
+        
+        .nav-brand span {
+            color: var(--accent);
+        }
+        
+        .nav-link {
+            color: #fff !important;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: var(--accent) !important;
+        }
+        
+        .balance-card {
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 5px 15px rgba(255, 102, 0, 0.2);
+        }
+        
+        .tournament-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 102, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .tournament-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3);
+        }
+        
+        .live-badge {
+            background: linear-gradient(90deg, var(--danger), var(--primary));
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .btn-ff {
+            background: linear-gradient(90deg, var(--primary), var(--danger));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-ff:hover {
+            background: linear-gradient(90deg, var(--danger), var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 102, 0, 0.4);
+        }
+        
+        .login-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+        }
+        
+        .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 6px;
+        }
+        
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(255, 102, 0, 0.25);
+            color: white;
+        }
+        
+        .countdown-timer {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+        }
+        
+        .kill-reward {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        
+        .winner-prize {
+            background: linear-gradient(135deg, rgba(255, 204, 0, 0.15), rgba(255, 102, 0, 0.15));
+            border: 2px solid var(--warning);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .status-pending { background: #ffcc00; color: black; }
+        .status-approved { background: #00cc66; color: white; }
+        .status-rejected { background: #ff3300; color: white; }
+        .status-live { background: #ff3300; color: white; }
+        .status-upcoming { background: #00a8ff; color: white; }
+        .status-completed { background: #00cc66; color: white; }
+        .status-joined { background: #cce5ff; color: #004085; }
+        
+        .user-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--primary);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            background: var(--secondary);
+            border-top: 2px solid var(--primary);
+            margin-top: 30px;
+            padding: 15px 0;
+        }
+        
+        .toast-container {
+            z-index: 9999;
+        }
+        
+        .payment-method-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-right: 5px;
+        }
+        
+        .bkash { background: #e2136e; color: white; }
+        .nagad { background: #f8a01c; color: #000; }
+        .rocket { background: #5d2d8d; color: white; }
+        .upay { background: #00a859; color: white; }
+        
+        .withdraw-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            border-radius: 50px;
+            padding: 10px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .player-input-group {
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .player-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .room-details-box {
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .room-id {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff88;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .room-password {
+            font-size: 20px;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(90deg, #00ccff, #0099cc);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .copy-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+        }
+        
+        .tournament-type-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+        
+        .type-solo { background: #3498db; color: white; }
+        .type-duo { background: #9b59b6; color: white; }
+        .type-squad { background: #e74c3c; color: white; }
+        
+        .notification-badge {
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-link {
+                margin: 3px 0;
+                padding: 5px 10px;
+            }
+            
+            .tournament-card {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            
+            .withdraw-btn {
+                bottom: 10px;
+                right: 10px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            
+            .room-id {
+                font-size: 18px;
+            }
+            
+            .room-password {
+                font-size: 16px;
+            }
+        }
+    </style>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCN_MH6u2Bpo3bxfDC_dhC19U67LP8ZS_E",
+            authDomain: "free-fire-22cac.firebaseapp.com",
+            databaseURL: "https://free-fire-22cac-default-rtdb.firebaseio.com",
+            projectId: "free-fire-22cac",
+            storageBucket: "free-fire-22cac.firebasestorage.app",
+            messagingSenderId: "554987602894",
+            appId: "1:554987602894:web:51548645a15c0d1e8d619f",
+            measurementId: "G-W2QYY1CQ8D"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+    </script>
+</head>
+<body>
+    <!-- Header Notice Marquee -->
+    <div class="header-marquee">
+        <marquee behavior="scroll" direction="left" id="noticeMarquee">
+            🎮 Welcome to FF Tournament Platform! Join Free Fire Tournaments & Win Cash Prizes!
+        </marquee>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg main-nav sticky-top">
+        <div class="container">
+            <a class="navbar-brand nav-brand" href="#">
+                <i class="fas fa-fire"></i> FF<span>Tournament</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon text-white"><i class="fas fa-bars"></i></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection('home')">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('tournaments')">
+                            <i class="fas fa-trophy"></i> Tournaments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('history')">
+                            <i class="fas fa-history"></i> History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('profile')">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- User Balance & Login -->
+                <div class="d-flex align-items-center ms-lg-3 mt-2 mt-lg-0" id="userControls">
+                    <div class="balance-card me-3 d-none" id="userBalanceCard">
+                        <i class="fas fa-wallet text-warning"></i>
+                        <span id="userBalance">0</span> ৳
+                    </div>
+                    
+                    <div class="dropdown me-3 d-none" id="loggedInUser">
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>
+                            <span class="notification-badge" id="userNotificationCount">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="showSection('profile')">
+                                <i class="fas fa-user"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showSection('history')">
+                                <i class="fas fa-history"></i> History
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <button class="btn btn-ff btn-sm" id="loginBtn" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="fas fa-user"></i> Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4" id="mainContent">
+        <!-- Home Section -->
+        <section id="homeSection">
+            <!-- Guest View -->
+            <div class="row" id="guestView">
+                <div class="col-12 text-center py-4">
+                    <h1 class="display-5 mb-3">🎮 Free Fire Tournament Platform</h1>
+                    <p class="lead mb-4">Join Custom Room Tournaments & Win Cash Prizes in BDT!</p>
+                    
+                    <div class="row justify-content-center mt-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="balance-card text-center">
+                                <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
+                                <h5>Win Prizes</h5>
+                                <p class="small">Compete and win exciting cash prizes in BDT</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="balance-card text-center">
+                                <i class="fas fa-bolt fa-2x text-danger mb-2"></i>
+                                <h5>Kill Rewards</h5>
+                                <p class="small">Get cashback in BDT for each kill</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="balance-card text-center">
+                                <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                <h5>Secure Platform</h5>
+                                <p class="small">Safe and secure transactions</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-ff btn-lg mt-3" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="fas fa-sign-in-alt"></i> Login to Join
+                    </button>
+                </div>
+            </div>
+            
+            <!-- User Dashboard -->
+            <div class="row d-none" id="userDashboard">
+                <div class="col-lg-3 col-md-4">
+                    <!-- User Profile -->
+                    <div class="balance-card text-center" id="userProfileCard">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="balance-card mt-3">
+                        <h6><i class="fas fa-bolt"></i> Quick Actions</h6>
+                        <button class="btn btn-ff btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#rechargeModal">
+                            <i class="fas fa-plus-circle"></i> Add Balance
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm w-100 mt-2" onclick="showSection('tournaments')">
+                            <i class="fas fa-gamepad"></i> Join Tournament
+                        </button>
+                        <button class="btn btn-outline-success btn-sm w-100 mt-2" onclick="showWithdrawModal()">
+                            <i class="fas fa-money-bill-wave"></i> Withdraw
+                        </button>
+                        <button class="btn btn-outline-info btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#updateProfileModal">
+                            <i class="fas fa-user-edit"></i> Update Profile
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-lg-9 col-md-8">
+                    <!-- Live Tournament -->
+                    <div class="tournament-card" id="liveTournamentCard">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <!-- Upcoming Tournaments -->
+                    <h5 class="mt-4 mb-3"><i class="fas fa-calendar-alt"></i> Upcoming Tournaments</h5>
+                    <div class="row" id="upcomingTournaments">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tournaments Section -->
+        <section id="tournamentsSection" class="d-none">
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="mb-3"><i class="fas fa-trophy"></i> All Tournaments</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-2">
+                            <select class="form-select form-select-sm" id="tournamentFilter" onchange="filterTournaments()">
+                                <option value="all">All Tournaments</option>
+                                <option value="solo">Solo</option>
+                                <option value="duo">Duo</option>
+                                <option value="squad">Squad</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" placeholder="Search tournaments..." id="searchTournament">
+                                <button class="btn btn-outline-primary" onclick="searchTournaments()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="allTournamentsContainer">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="historySection" class="d-none">
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="mb-3"><i class="fas fa-history"></i> Transaction History</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-2">
+                            <select class="form-select form-select-sm" id="transactionTypeFilter" onchange="filterTransactions()">
+                                <option value="all">All Transactions</option>
+                                <option value="recharge">Recharge</option>
+                                <option value="withdrawal">Withdrawal</option>
+                                <option value="tournament">Tournament</option>
+                                <option value="winning">Winnings</option>
+                                <option value="kill">Kill Rewards</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="date" class="form-control form-control-sm" id="transactionDateFilter">
+                        </div>
+                    </div>
+                    
+                    <div id="transactionsList">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profileSection" class="d-none">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="balance-card text-center" id="profileCard">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="balance-card">
+                        <h5><i class="fas fa-info-circle"></i> Account Information</h5>
+                        <div id="accountInfo">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Joined Tournaments -->
+                    <div class="balance-card mt-3">
+                        <h5><i class="fas fa-gamepad"></i> Active Tournaments</h5>
+                        <div id="activeTournaments">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-fire"></i> FF Tournament</h6>
+                    <p class="small">Premium Free Fire Tournament Platform</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h6>Contact Support</h6>
+                    <p class="small"><i class="fas fa-envelope"></i> support@fftournament.com</p>
+                </div>
+            </div>
+            <hr class="bg-light my-2">
+            <p class="text-center small">© 2023 FF Tournament. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Floating Withdraw Button -->
+    <button class="btn btn-success withdraw-btn d-none" id="floatingWithdrawBtn" onclick="showWithdrawModal()">
+        <i class="fas fa-money-bill-wave"></i> Withdraw
+    </button>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-sign-in-alt"></i> Login / Register</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="loginTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#login">
+                                Login
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#register">
+                                Register
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content mt-3">
+                        <!-- Login -->
+                        <div class="tab-pane fade show active" id="login">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" id="loginUsername" placeholder="Enter username">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="loginPassword" placeholder="Enter password">
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label">Remember me</label>
+                            </div>
+                            <button class="btn btn-ff w-100" onclick="userLogin()">Login</button>
+                        </div>
+                        
+                        <!-- Register -->
+                        <div class="tab-pane fade" id="register">
+                            <div class="mb-3">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="regName" placeholder="Enter full name">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" id="regUsername" placeholder="Choose username">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="regPassword" placeholder="Create password">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Free Fire ID</label>
+                                <input type="text" class="form-control" id="regFFID" placeholder="Enter Free Fire ID">
+                            </div>
+                            <button class="btn btn-ff w-100" onclick="registerUser()">Register</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recharge Modal -->
+    <div class="modal fade" id="rechargeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-wallet"></i> Recharge Balance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Amount (৳)</label>
+                        <input type="number" class="form-control" id="rechargeAmount" placeholder="Enter amount" min="100" value="500">
+                        <small class="text-muted">Minimum: ৳100</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" id="paymentMethod" onchange="showPaymentNumber()">
+                            <option value="">Select Payment Method</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="paymentNumberInfo" style="display: none;">
+                        <div class="alert alert-info p-2">
+                            <p class="small mb-1"><strong id="selectedMethodName">Method</strong></p>
+                            <p class="mb-1 small">Send money to: <strong id="paymentNumber">XXXXXXXXXX</strong></p>
+                            <p class="mb-0 small">Type: <span id="paymentType">Personal</span></p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Transaction ID</label>
+                        <input type="text" class="form-control" id="transactionId" placeholder="Enter transaction ID" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Sending Number</label>
+                        <input type="text" class="form-control" id="senderNumber" placeholder="Enter your number" required>
+                    </div>
+                    <button class="btn btn-ff w-100" onclick="submitRechargeRequest()">Submit Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-money-bill-wave"></i> Withdraw Balance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Amount (৳)</label>
+                        <input type="number" class="form-control" id="withdrawAmount" placeholder="Enter amount" min="200">
+                        <small class="text-muted" id="minWithdrawalText">Minimum withdrawal: ৳200</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" id="withdrawMethod">
+                            <option value="bkash">bKash</option>
+                            <option value="nagad">Nagad</option>
+                            <option value="rocket">Rocket (DBBL)</option>
+                            <option value="upay">Upay</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Account Number</label>
+                        <input type="text" class="form-control" id="withdrawAccountNumber" placeholder="Enter your account number" required>
+                    </div>
+                    <div class="alert alert-warning">
+                        <p class="small mb-0"><i class="fas fa-info-circle"></i> 
+                            Withdrawal requests are processed manually by admin. You will receive payment within 24 hours.
+                        </p>
+                    </div>
+                    <button class="btn btn-success w-100" onclick="submitWithdrawRequest()">Submit Withdrawal Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Profile Modal -->
+    <div class="modal fade" id="updateProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-user-edit"></i> Update Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="updateName" placeholder="Enter full name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Free Fire ID</label>
+                        <input type="text" class="form-control" id="updateFFID" placeholder="Enter Free Fire ID">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="updatePhone" placeholder="Enter phone number">
+                    </div>
+                    <button class="btn btn-ff w-100" onclick="updateProfile()">Update Profile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Tournament Modal -->
+    <div class="modal fade" id="joinTournamentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-gamepad"></i> Join Tournament</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="tournamentDetails">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Room Details Modal -->
+    <div class="modal fade" id="viewRoomModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="fas fa-door-open"></i> Room Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="roomDetails">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert">
+            <div class="toast-header bg-success text-white">
+                <strong class="me-auto"><i class="fas fa-check-circle"></i> Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successToastBody"></div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto"><i class="fas fa-exclamation-circle"></i> Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody"></div>
+        </div>
+        
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header bg-primary text-white">
+                <strong class="me-auto"><i class="fas fa-bell"></i> Notification</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="notificationToastBody"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global Variables
+        let currentUser = null;
+        let isLoggedIn = false;
+        let tournaments = [];
+        let userTransactions = [];
+        let paymentMethods = [];
+        let systemSettings = {};
+        let rememberMe = false;
+        let userNotifications = [];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExistingLogin();
+            loadNotices();
+            loadSystemSettings();
+            setupFirebaseListeners();
+        });
+        
+        // Load System Settings
+        function loadSystemSettings() {
+            database.ref('admin/settings').once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        systemSettings = snapshot.val();
+                        if (systemSettings.minWithdrawal) {
+                            document.getElementById('minWithdrawalText').textContent = 
+                                `Minimum withdrawal: ৳${systemSettings.minWithdrawal}`;
+                        }
+                    }
+                });
+        }
+        
+        // Check Existing Login
+        function checkExistingLogin() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    autoLogin(userData.username);
+                } catch (e) {
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        }
+        
+        // Setup Firebase Listeners
+        function setupFirebaseListeners() {
+            // Listen for notices
+            database.ref('notices').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    let noticeText = '';
+                    snapshot.forEach((child) => {
+                        const notice = child.val();
+                        if (notice.active) {
+                            noticeText += ' 📢 ' + notice.message + ' | ';
+                        }
+                    });
+                    if (noticeText) {
+                        document.getElementById('noticeMarquee').innerHTML = noticeText;
+                    }
+                }
+            });
+            
+            // Listen for tournaments
+            database.ref('tournaments').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    tournaments = [];
+                    snapshot.forEach((child) => {
+                        const tournament = child.val();
+                        tournament.id = child.key;
+                        tournaments.push(tournament);
+                    });
+                    
+                    // Update UI if user is logged in
+                    if (isLoggedIn) {
+                        displayTournaments();
+                        displayLiveTournament();
+                        displayUpcomingTournaments();
+                        displayActiveTournaments();
+                    }
+                }
+            });
+            
+            // Listen for payment methods
+            database.ref('admin/settings/paymentMethods').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    paymentMethods = [];
+                    snapshot.forEach((child) => {
+                        const method = child.val();
+                        method.name = child.key;
+                        paymentMethods.push(method);
+                    });
+                    
+                    // Update recharge modal payment methods
+                    updatePaymentMethods();
+                }
+            });
+            
+            // Listen for user updates
+            database.ref('users').on('value', (snapshot) => {
+                if (snapshot.exists() && isLoggedIn && currentUser) {
+                    const userData = snapshot.val()[currentUser.username];
+                    if (userData) {
+                        currentUser.balance = userData.balance || 0;
+                        currentUser.name = userData.name || currentUser.username;
+                        currentUser.ffid = userData.ffid || '';
+                        currentUser.phone = userData.phone || '';
+                        updateUserUI();
+                        
+                        // Load transactions
+                        if (userData.transactions) {
+                            userTransactions = [];
+                            Object.keys(userData.transactions).forEach(key => {
+                                const transaction = userData.transactions[key];
+                                transaction.id = key;
+                                userTransactions.push(transaction);
+                            });
+                            
+                            userTransactions.sort((a, b) => b.timestamp - a.timestamp);
+                            
+                            if (document.getElementById('historySection').classList.contains('d-none') === false) {
+                                displayTransactions(userTransactions);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Listen for user notifications
+            database.ref('users').on('value', (snapshot) => {
+                if (snapshot.exists() && isLoggedIn && currentUser) {
+                    const userData = snapshot.val()[currentUser.username];
+                    if (userData && userData.notifications) {
+                        userNotifications = [];
+                        Object.keys(userData.notifications).forEach(key => {
+                            const notification = userData.notifications[key];
+                            notification.id = key;
+                            userNotifications.push(notification);
+                        });
+                        
+                        // Check for unread notifications
+                        const unreadNotifications = userNotifications.filter(n => !n.read);
+                        document.getElementById('userNotificationCount').textContent = unreadNotifications.length;
+                        
+                        // Show new notifications
+                        unreadNotifications.forEach(notification => {
+                            if (notification.type === 'room_details') {
+                                showRoomNotification(notification);
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Show Room Notification
+        function showRoomNotification(notification) {
+            const notificationBody = document.getElementById('notificationToastBody');
+            notificationBody.innerHTML = `
+                <h6>${notification.tournamentTitle}</h6>
+                <p class="mb-1">Room details are now available!</p>
+                <button class="btn btn-sm btn-success w-100 mt-2" onclick="checkRoomDetails('${notification.tournamentId}')">
+                    <i class="fas fa-eye"></i> View Room Details
+                </button>
+            `;
+            
+            const toast = new bootstrap.Toast(document.getElementById('notificationToast'));
+            toast.show();
+            
+            // Mark as read
+            if (currentUser && currentUser.username) {
+                database.ref(`users/${currentUser.username}/notifications/${notification.id}`).update({
+                    read: true
+                });
+            }
+        }
+        
+        // Update Payment Methods in Recharge Modal
+        function updatePaymentMethods() {
+            const select = document.getElementById('paymentMethod');
+            select.innerHTML = '<option value="">Select Payment Method</option>';
+            
+            paymentMethods.forEach(method => {
+                if (method.status === 'active') {
+                    const option = document.createElement('option');
+                    option.value = method.name;
+                    option.textContent = method.name;
+                    select.appendChild(option);
+                }
+            });
+        }
+        
+        // Show Payment Number
+        function showPaymentNumber() {
+            const methodName = document.getElementById('paymentMethod').value;
+            const infoDiv = document.getElementById('paymentNumberInfo');
+            const method = paymentMethods.find(m => m.name === methodName);
+            
+            if (method) {
+                document.getElementById('selectedMethodName').textContent = method.name;
+                document.getElementById('paymentNumber').textContent = method.number;
+                document.getElementById('paymentType').textContent = method.type || 'Personal';
+                infoDiv.style.display = 'block';
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+        
+        // User Login
+        function userLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            rememberMe = document.getElementById('rememberMe').checked;
+            
+            if (!username || !password) {
+                showError('Please enter username and password');
+                return;
+            }
+            
+            database.ref(`users/${username}`).once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        
+                        if (userData.password === password) {
+                            // Login successful
+                            currentUser = userData;
+                            currentUser.username = username;
+                            isLoggedIn = true;
+                            
+                            // Save to localStorage if remember me is checked
+                            if (rememberMe) {
+                                localStorage.setItem('currentUser', JSON.stringify({
+                                    username: username,
+                                    timestamp: Date.now()
+                                }));
+                            }
+                            
+                            // Update UI
+                            showUserDashboard();
+                            loadUserData();
+                            
+                            // Close modal
+                            const modalElement = document.getElementById('loginModal');
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) modal.hide();
+                            
+                            showSuccess('Login successful!');
+                        } else {
+                            showError('Invalid password');
+                        }
+                    } else {
+                        showError('User not found');
+                    }
+                })
+                .catch((error) => {
+                    showError('Login failed: ' + error.message);
+                });
+        }
+        
+        // Auto Login
+        function autoLogin(username) {
+            database.ref(`users/${username}`).once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        currentUser = userData;
+                        currentUser.username = username;
+                        isLoggedIn = true;
+                        
+                        showUserDashboard();
+                        loadUserData();
+                        showSuccess('Welcome back!');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Auto login failed:', error);
+                });
+        }
+        
+        // Register User
+        function registerUser() {
+            const name = document.getElementById('regName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const ffid = document.getElementById('regFFID').value.trim();
+            
+            if (!name || !username || !password || !ffid) {
+                showError('Please fill all fields');
+                return;
+            }
+            
+            // Check if user exists
+            database.ref(`users/${username}`).once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        showError('Username already exists');
+                    } else {
+                        const userData = {
+                            name: name,
+                            password: password,
+                            ffid: ffid,
+                            balance: 0,
+                            kills: 0,
+                            wins: 0,
+                            matches: 0,
+                            joinDate: new Date().toISOString(),
+                            transactions: {}
+                        };
+                        
+                        // Create user
+                        database.ref(`users/${username}`).set(userData)
+                            .then(() => {
+                                // Auto login
+                                currentUser = userData;
+                                currentUser.username = username;
+                                isLoggedIn = true;
+                                
+                                localStorage.setItem('currentUser', JSON.stringify({
+                                    username: username,
+                                    timestamp: Date.now()
+                                }));
+                                
+                                // Update UI
+                                showUserDashboard();
+                                loadUserData();
+                                
+                                // Close modal
+                                const modalElement = document.getElementById('loginModal');
+                                const modal = bootstrap.Modal.getInstance(modalElement);
+                                if (modal) modal.hide();
+                                
+                                showSuccess('Registration successful!');
+                            })
+                            .catch((error) => {
+                                showError('Registration failed: ' + error.message);
+                            });
+                    }
+                })
+                .catch((error) => {
+                    showError('Error checking user: ' + error.message);
+                });
+        }
+        
+        // Show User Dashboard
+        function showUserDashboard() {
+            document.getElementById('guestView').classList.add('d-none');
+            document.getElementById('userDashboard').classList.remove('d-none');
+            document.getElementById('userBalanceCard').classList.remove('d-none');
+            document.getElementById('loggedInUser').classList.remove('d-none');
+            document.getElementById('loginBtn').classList.add('d-none');
+            document.getElementById('floatingWithdrawBtn').classList.remove('d-none');
+            
+            showSection('home');
+        }
+        
+        // Load User Data
+        function loadUserData() {
+            if (!currentUser) return;
+            
+            // Update UI
+            updateUserUI();
+        }
+        
+        // Update User UI
+        function updateUserUI() {
+            document.getElementById('userBalance').textContent = currentUser.balance || 0;
+            
+            // Update profile card
+            const profileCard = document.getElementById('userProfileCard');
+            profileCard.innerHTML = `
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User" class="user-avatar mb-2">
+                <h6>${currentUser.name || currentUser.username}</h6>
+                <p class="small text-muted mb-2">FF ID: <span class="text-warning">${currentUser.ffid || 'N/A'}</span></p>
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <small class="text-warning">Kills</small>
+                        <p class="mb-0">${currentUser.kills || 0}</p>
+                    </div>
+                    <div>
+                        <small class="text-success">Wins</small>
+                        <p class="mb-0">${currentUser.wins || 0}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Show Withdraw Modal
+        function showWithdrawModal() {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            // Check minimum withdrawal
+            const minWithdrawal = systemSettings.minWithdrawal || 200;
+            document.getElementById('withdrawAmount').min = minWithdrawal;
+            
+            const modal = new bootstrap.Modal(document.getElementById('withdrawModal'));
+            modal.show();
+        }
+        
+        // Submit Withdrawal Request
+        function submitWithdrawRequest() {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const method = document.getElementById('withdrawMethod').value;
+            const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
+            const minWithdrawal = systemSettings.minWithdrawal || 200;
+            
+            if (!amount || amount < minWithdrawal) {
+                showError(`Minimum withdrawal amount is ৳${minWithdrawal}`);
+                return;
+            }
+            
+            if (!accountNumber) {
+                showError('Please enter your account number');
+                return;
+            }
+            
+            if (currentUser.balance < amount) {
+                showError('Insufficient balance');
+                return;
+            }
+            
+            const withdrawData = {
+                username: currentUser.username,
+                amount: amount,
+                method: method,
+                accountNumber: accountNumber,
+                status: 'pending',
+                timestamp: Date.now()
+            };
+            
+            const requestId = 'withdraw_' + Date.now();
+            
+            database.ref(`withdrawRequests/${requestId}`).set(withdrawData)
+                .then(() => {
+                    // Add to user transactions
+                    database.ref(`users/${currentUser.username}/transactions/${requestId}`).set({
+                        type: 'withdrawal_request',
+                        amount: -amount,
+                        status: 'pending',
+                        timestamp: Date.now(),
+                        method: method
+                    });
+                    
+                    // Clear form
+                    document.getElementById('withdrawAmount').value = '';
+                    document.getElementById('withdrawAccountNumber').value = '';
+                    
+                    // Close modal
+                    const modalElement = document.getElementById('withdrawModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                    
+                    showSuccess('Withdrawal request submitted! Admin will process it within 24 hours.');
+                })
+                .catch((error) => {
+                    showError('Failed to submit request: ' + error.message);
+                });
+        }
+        
+        // Submit Recharge Request
+        function submitRechargeRequest() {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            const amount = document.getElementById('rechargeAmount').value;
+            const method = document.getElementById('paymentMethod').value;
+            const transactionId = document.getElementById('transactionId').value.trim();
+            const senderNumber = document.getElementById('senderNumber').value.trim();
+            
+            if (!amount || amount < 100 || !transactionId || !senderNumber || !method) {
+                showError('Please fill all fields correctly');
+                return;
+            }
+            
+            const rechargeData = {
+                username: currentUser.username,
+                amount: parseInt(amount),
+                method: method,
+                transactionId: transactionId,
+                senderNumber: senderNumber,
+                status: 'pending',
+                timestamp: Date.now()
+            };
+            
+            const requestId = 'recharge_' + Date.now();
+            
+            database.ref(`rechargeRequests/${requestId}`).set(rechargeData)
+                .then(() => {
+                    // Add to user transactions
+                    database.ref(`users/${currentUser.username}/transactions/${requestId}`).set({
+                        type: 'recharge_request',
+                        amount: parseInt(amount),
+                        status: 'pending',
+                        timestamp: Date.now(),
+                        method: method
+                    });
+                    
+                    // Clear form
+                    document.getElementById('rechargeAmount').value = '';
+                    document.getElementById('transactionId').value = '';
+                    document.getElementById('senderNumber').value = '';
+                    document.getElementById('paymentNumberInfo').style.display = 'none';
+                    
+                    // Close modal
+                    const modalElement = document.getElementById('rechargeModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                    
+                    showSuccess('Recharge request submitted! Admin will approve soon.');
+                })
+                .catch((error) => {
+                    showError('Failed to submit request: ' + error.message);
+                });
+        }
+        
+        // Update Profile
+        function updateProfile() {
+            if (!isLoggedIn) return;
+            
+            const name = document.getElementById('updateName').value.trim();
+            const ffid = document.getElementById('updateFFID').value.trim();
+            const phone = document.getElementById('updatePhone').value.trim();
+            
+            const updates = {};
+            if (name) updates.name = name;
+            if (ffid) updates.ffid = ffid;
+            if (phone) updates.phone = phone;
+            
+            if (Object.keys(updates).length === 0) {
+                showError('No changes made');
+                return;
+            }
+            
+            database.ref(`users/${currentUser.username}`).update(updates)
+                .then(() => {
+                    // Update current user
+                    Object.assign(currentUser, updates);
+                    
+                    // Update UI
+                    updateUserUI();
+                    
+                    // Close modal
+                    const modalElement = document.getElementById('updateProfileModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                    
+                    showSuccess('Profile updated successfully!');
+                })
+                .catch((error) => {
+                    showError('Failed to update profile: ' + error.message);
+                });
+        }
+        
+        // Show Join Tournament Modal
+        function showJoinTournamentModal(tournamentId) {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return;
+            
+            // Check if tournament is upcoming (cannot join live tournaments)
+            if (tournament.status !== 'upcoming') {
+                showError('You can only join upcoming tournaments. This tournament is ' + tournament.status);
+                return;
+            }
+            
+            // Check if already joined
+            database.ref(`tournaments/${tournamentId}/players/${currentUser.username}`).once('value')
+                .then((snapshot) => {
+                    const modalBody = document.getElementById('tournamentDetails');
+                    
+                    if (snapshot.exists()) {
+                        // Already joined
+                        modalBody.innerHTML = `
+                            <h6>${tournament.title}</h6>
+                            <div class="alert alert-success">
+                                <p class="mb-0"><i class="fas fa-check-circle"></i> You have already joined this tournament!</p>
+                                <p class="mb-0 small mt-1">Payment Status: <span class="badge bg-success">Completed</span></p>
+                            </div>
+                            <p class="small mb-1"><strong>Type:</strong> ${tournament.type}</p>
+                            <p class="small mb-1"><strong>Schedule:</strong> ${new Date(tournament.schedule).toLocaleString()}</p>
+                            <p class="small mb-1"><strong>Entry Fee Paid:</strong> <span class="text-warning">৳${tournament.entryFee}</span></p>
+                            
+                            <button class="btn btn-success w-100 mt-2" onclick="viewJoinedTournament('${tournament.id}')">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        `;
+                    } else {
+                        // Not joined yet
+                        const isDuo = tournament.type === 'duo';
+                        const entryFee = tournament.entryFee;
+                        
+                        modalBody.innerHTML = `
+                            <h6>${tournament.title}</h6>
+                            <p class="small mb-1"><strong>Type:</strong> ${tournament.type} ${isDuo ? '(You can choose Solo or Duo)' : ''}</p>
+                            <p class="small mb-1"><strong>Schedule:</strong> ${new Date(tournament.schedule).toLocaleString()}</p>
+                            <p class="small mb-1"><strong>Prize Pool:</strong> <span class="text-success">৳${tournament.prize}</span></p>
+                            <p class="small mb-1"><strong>Kill Reward:</strong> <span class="text-danger">৳${tournament.killReward}/kill</span></p>
+                            <p class="small mb-2"><strong>Your Balance:</strong> <span class="text-info">৳${currentUser.balance}</span></p>
+                            
+                            ${currentUser.balance < entryFee ? 
+                                `<div class="alert alert-danger">
+                                    <p class="mb-0"><i class="fas fa-exclamation-triangle"></i> Insufficient balance! Need ৳${entryFee - currentUser.balance} more.</p>
+                                </div>` : ''
+                            }
+                            
+                            ${isDuo ? `
+                                <div class="mb-3">
+                                    <h6 class="small">Choose Your Play Mode:</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="playMode" id="modeSolo" value="solo" checked>
+                                        <label class="form-check-label" for="modeSolo">
+                                            Solo (৳${entryFee})
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="playMode" id="modeDuo" value="duo">
+                                        <label class="form-check-label" for="modeDuo">
+                                            Duo (৳${entryFee} × 2 = ৳${entryFee * 2})
+                                        </label>
+                                    </div>
+                                    
+                                    <div id="duoDetails" style="display: none;">
+                                        <div class="player-input-group">
+                                            <div class="player-label">Player 1 (You)</div>
+                                            <input type="text" class="form-control form-control-sm mb-2" id="player1Name" 
+                                                   value="${currentUser.name || currentUser.username}" readonly>
+                                            <div class="player-label">Free Fire ID</div>
+                                            <input type="text" class="form-control form-control-sm" id="player1FFID" 
+                                                   value="${currentUser.ffid || ''}" placeholder="Enter your FF ID" required>
+                                        </div>
+                                        <div class="player-input-group">
+                                            <div class="player-label">Player 2 (Partner)</div>
+                                            <input type="text" class="form-control form-control-sm mb-2" id="player2Name" 
+                                                   placeholder="Enter partner name" required>
+                                            <div class="player-label">Partner Free Fire ID</div>
+                                            <input type="text" class="form-control form-control-sm" id="player2FFID" 
+                                                   placeholder="Enter partner FF ID" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="mb-3">
+                                    <div class="player-input-group">
+                                        <div class="player-label">Player Name</div>
+                                        <input type="text" class="form-control" id="playerName" 
+                                               value="${currentUser.name || currentUser.username}" readonly>
+                                        <div class="player-label mt-2">Free Fire ID</div>
+                                        <input type="text" class="form-control" id="playerFFID" 
+                                               value="${currentUser.ffid || ''}" placeholder="Enter your FF ID" required>
+                                    </div>
+                                </div>
+                            `}
+                            
+                            <button class="btn btn-ff w-100" onclick="joinTournament('${tournament.id}')" 
+                                    ${currentUser.balance < entryFee ? 'disabled' : ''}>
+                                Confirm Join
+                            </button>
+                            
+                            <div class="alert alert-warning mt-2 p-2">
+                                <p class="small mb-0"><i class="fas fa-info-circle"></i> 
+                                    <strong>Important:</strong> Room ID & Password will be available only when tournament goes live.
+                                </p>
+                            </div>
+                        `;
+                        
+                        // Add event listeners for duo mode toggle
+                        if (isDuo) {
+                            setTimeout(() => {
+                                document.querySelectorAll('input[name="playMode"]').forEach(radio => {
+                                    radio.addEventListener('change', function() {
+                                        document.getElementById('duoDetails').style.display = 
+                                            this.value === 'duo' ? 'block' : 'none';
+                                    });
+                                });
+                            }, 100);
+                        }
+                    } 
+                    const modal = new bootstrap.Modal(document.getElementById('joinTournamentModal'));
+                    modal.show();
+                });
+        }
+        
+        // Join Tournament
+        function joinTournament(tournamentId) {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) {
+                showError('Tournament not found');
+                return;
+            }
+            
+            // Check if tournament is upcoming
+            if (tournament.status !== 'upcoming') {
+                showError('You can only join upcoming tournaments');
+                return;
+            }
+            
+            const isDuoTournament = tournament.type === 'duo';
+            let playMode = 'solo';
+            let entryFee = tournament.entryFee;
+            let playerData = {};
+            
+            if (isDuoTournament) {
+                const modeInput = document.querySelector('input[name="playMode"]:checked');
+                if (!modeInput) {
+                    showError('Please select a play mode');
+                    return;
+                }
+                playMode = modeInput.value;
+                if (playMode === 'duo') {
+                    entryFee = tournament.entryFee * 2;
+                    
+                    // Validate duo details
+                    const player2Name = document.getElementById('player2Name').value.trim();
+                    const player2FFID = document.getElementById('player2FFID').value.trim();
+                    
+                    if (!player2Name || !player2FFID) {
+                        showError('Please fill partner details for duo mode');
+                        return;
+                    }
+                    
+                    const player1FFID = document.getElementById('player1FFID').value.trim();
+                    if (!player1FFID) {
+                        showError('Please enter your Free Fire ID');
+                        return;
+                    }
+                    
+                    playerData = {
+                        username: currentUser.username,
+                        player1: {
+                            name: currentUser.name || currentUser.username,
+                            ffid: player1FFID
+                        },
+                        player2: {
+                            name: player2Name,
+                            ffid: player2FFID
+                        },
+                        playMode: 'duo',
+                        entryPaid: entryFee,
+                        joinedAt: Date.now(),
+                        status: 'joined'
+                    };
+                } else {
+                    const playerFFID = document.getElementById('player1FFID').value.trim();
+                    if (!playerFFID) {
+                        showError('Please enter your Free Fire ID');
+                        return;
+                    }
+                    
+                    playerData = {
+                        username: currentUser.username,
+                        name: currentUser.name || currentUser.username,
+                        ffid: playerFFID,
+                        playMode: 'solo',
+                        entryPaid: entryFee,
+                        joinedAt: Date.now(),
+                        status: 'joined'
+                    };
+                }
+            } else {
+                const playerFFID = document.getElementById('playerFFID').value.trim();
+                if (!playerFFID) {
+                    showError('Please enter your Free Fire ID');
+                    return;
+                }
+                
+                playerData = {
+                    username: currentUser.username,
+                    name: currentUser.name || currentUser.username,
+                    ffid: playerFFID,
+                    playMode: 'solo',
+                    entryPaid: entryFee,
+                    joinedAt: Date.now(),
+                    status: 'joined'
+                };
+            }
+            
+            // Check balance
+            if (currentUser.balance < entryFee) {
+                showError('Insufficient balance');
+                return;
+            }
+            
+            // Join tournament
+            database.ref(`tournaments/${tournamentId}/players/${currentUser.username}`).set(playerData)
+                .then(() => {
+                    // Update player count
+                    const newCount = (tournament.joinedPlayers || 0) + 1;
+                    database.ref(`tournaments/${tournamentId}`).update({
+                        joinedPlayers: newCount
+                    });
+                    
+                    // Deduct entry fee
+                    const newBalance = currentUser.balance - entryFee;
+                    database.ref(`users/${currentUser.username}`).update({
+                        balance: newBalance
+                    });
+                    
+                    // Update current user
+                    currentUser.balance = newBalance;
+                    updateUserUI();
+                    
+                    // Add transaction
+                    const transactionId = Date.now().toString();
+                    database.ref(`users/${currentUser.username}/transactions/${transactionId}`).set({
+                        type: 'tournament_entry',
+                        tournamentId: tournamentId,
+                        tournamentName: tournament.title,
+                        amount: -entryFee,
+                        status: 'completed',
+                        timestamp: Date.now(),
+                        playMode: isDuoTournament ? playMode : 'solo'
+                    });
+                    
+                    // Close modal
+                    const modalElement = document.getElementById('joinTournamentModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                    
+                    showSuccess(`Successfully joined tournament as ${isDuoTournament ? playMode : 'solo'}! Entry fee ৳${entryFee} deducted.`);
+                })
+                .catch((error) => {
+                    showError('Failed to join: ' + error.message);
+                });
+        }
+        
+        // View Joined Tournament
+        function viewJoinedTournament(tournamentId) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return;
+            
+            database.ref(`tournaments/${tournamentId}/players/${currentUser.username}`).once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const playerData = snapshot.val();
+                        const modalBody = document.getElementById('tournamentDetails');
+                        
+                        let playerInfo = '';
+                        if (playerData.playMode === 'duo') {
+                            playerInfo = `
+                                <p class="small mb-1"><strong>Player 1:</strong> ${playerData.player1.name} (${playerData.player1.ffid})</p>
+                                <p class="small mb-1"><strong>Player 2:</strong> ${playerData.player2.name} (${playerData.player2.ffid})</p>
+                            `;
+                        } else {
+                            playerInfo = `
+                                <p class="small mb-1"><strong>Player:</strong> ${playerData.name} (${playerData.ffid})</p>
+                            `;
+                        }
+                        
+                        modalBody.innerHTML = `
+                            <h6>${tournament.title}</h6>
+                            <div class="alert alert-success">
+                                <p class="mb-0"><i class="fas fa-check-circle"></i> You have joined this tournament!</p>
+                                <p class="mb-0 small mt-1">Payment Status: <span class="badge bg-success">Completed</span></p>
+                                <p class="mb-0 small mt-1">Play Mode: <span class="badge bg-info">${playerData.playMode}</span></p>
+                            </div>
+                            ${playerInfo}
+                            <p class="small mb-1"><strong>Entry Fee Paid:</strong> <span class="text-warning">৳${playerData.entryPaid}</span></p>
+                            <p class="small mb-1"><strong>Tournament Status:</strong> <span class="badge bg-${tournament.status === 'live' ? 'danger' : 'warning'}">${tournament.status}</span></p>
+                            
+                            ${tournament.status === 'live' && tournament.roomId ? `
+                                <button class="btn btn-success w-100 mt-2" onclick="viewRoomDetails('${tournament.id}')">
+                                    <i class="fas fa-door-open"></i> View Room Details
+                                </button>
+                            ` : ''}
+                            ${tournament.status === 'live' && !tournament.roomId ? `
+                                <div class="alert alert-info mt-2">
+                                    <p class="mb-0 small"><i class="fas fa-clock"></i> Room details will be available soon. Admin is setting up the room.</p>
+                                </div>
+                            ` : ''}
+                        `;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('joinTournamentModal'));
+                        modal.show();
+                    }
+                });
+        }
+        
+        // View Room Details
+        function viewRoomDetails(tournamentId) {
+            if (!isLoggedIn) {
+                showError('Please login first');
+                return;
+            }
+            
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return;
+            
+            // Check if user has joined this tournament
+            database.ref(`tournaments/${tournamentId}/players/${currentUser.username}`).once('value')
+                .then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        showError('You must join the tournament first to view room details');
+                        return;
+                    }
+                    
+                    // Check if tournament is live and room details are available
+                    if (tournament.status === 'live' && tournament.roomId) {
+                        const modalBody = document.getElementById('roomDetails');
+                        modalBody.innerHTML = `
+                            <h6>${tournament.title}</h6>
+                            <div class="room-details-box">
+                                <h5><i class="fas fa-door-open"></i> Room Details</h5>
+                                <div class="room-id">${tournament.roomId}</div>
+                                <div class="room-password">${tournament.password}</div>
+                                <button class="copy-btn" onclick="copyRoomDetails('${tournament.roomId}', '${tournament.password}')">
+                                    <i class="fas fa-copy"></i> Copy Details
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <h6 class="mb-2"><i class="fas fa-info-circle"></i> Important Instructions</h6>
+                                <p class="small mb-1">1. Open Free Fire and go to Custom Room</p>
+                                <p class="small mb-1">2. Enter the Room ID and Password above</p>
+                                <p class="small mb-1">3. Join the room immediately</p>
+                                <p class="small mb-1">4. Tournament is LIVE now!</p>
+                                <p class="small mb-1">5. Report your kills after match ends</p>
+                            </div>
+                        `;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('viewRoomModal'));
+                        modal.show();
+                    } else if (tournament.status === 'live') {
+                        // Tournament is live but room details not set yet
+                        const modalBody = document.getElementById('roomDetails');
+                        modalBody.innerHTML = `
+                            <h6>${tournament.title}</h6>
+                            <div class="alert alert-warning">
+                                <p class="mb-0"><i class="fas fa-clock"></i> 
+                                    Room details are being set by admin. Please wait...
+                                </p>
+                            </div>
+                            <p class="small text-muted">Tournament Status: <span class="badge bg-danger">LIVE</span></p>
+                            <p class="small text-muted">Admin will provide room details shortly.</p>
+                        `;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('viewRoomModal'));
+                        modal.show();
+                    } else {
+                        showError('Room details are only available for live tournaments');
+                    }
+                });
+        }
+        
+        // Copy Room Details
+        function copyRoomDetails(roomId, password) {
+            const text = `Room ID: ${roomId}\nPassword: ${password}`;
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    showSuccess('Room details copied to clipboard!');
+                })
+                .catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showSuccess('Room details copied to clipboard!');
+                });
+        }
+        
+        // Check Room Details (for notifications)
+        function checkRoomDetails(tournamentId) {
+            viewRoomDetails(tournamentId);
+        }
+        
+        // Display Active Tournaments
+        function displayActiveTournaments() {
+            const container = document.getElementById('activeTournaments');
+            if (!tournaments.length) {
+                container.innerHTML = '<p class="text-center small">No active tournaments</p>';
+                return;
+            }
+            
+            let activeTournaments = [];
+            
+            // Check each tournament if user has joined
+            tournaments.forEach(tournament => {
+                if (tournament.players && tournament.players[currentUser.username]) {
+                    activeTournaments.push({
+                        ...tournament,
+                        playerData: tournament.players[currentUser.username]
+                    });
+                }
+            });
+            
+            if (!activeTournaments.length) {
+                container.innerHTML = '<p class="text-center small">You have not joined any tournaments</p>';
+                return;
+            }
+            
+            let html = '';
+            activeTournaments.forEach(tournament => {
+                const roomAvailable = tournament.status === 'live' && tournament.roomId;
+                
+                html += `
+                    <div class="mb-2 p-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${tournament.title}</h6>
+                                <p class="small mb-1">
+                                    <span class="badge bg-${tournament.status === 'live' ? 'danger' : 'warning'}">
+                                        ${tournament.status}
+                                    </span>
+                                    ${tournament.playerData.playMode === 'duo' ? '<span class="badge bg-info ms-1">Duo</span>' : ''}
+                                    ${roomAvailable ? '<span class="badge bg-success ms-1">Room Available</span>' : ''}
+                                </p>
+                            </div>
+                            ${roomAvailable ? 
+                                `<button class="btn btn-sm btn-success" onclick="viewRoomDetails('${tournament.id}')">
+                                    View Room
+                                </button>` :
+                                `<button class="btn btn-sm btn-outline-info" onclick="viewJoinedTournament('${tournament.id}')">
+                                    Details
+                                </button>`
+                            }
+                        </div>
+                        ${tournament.playerData.playMode === 'duo' ? `
+                            <p class="small mb-1">Mode: Duo Team</p>
+                        ` : `
+                            <p class="small mb-1">Mode: Solo</p>
+                        `}
+                        <p class="small mb-1">Entry Paid: <span class="text-success">৳${tournament.playerData.entryPaid}</span></p>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Display Transactions
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (!transactions || transactions.length === 0) {
+                container.innerHTML = '<p class="text-center">No transactions found</p>';
+                return;
+            }
+            
+            let html = '<div class="table-responsive"><table class="table table-sm table-dark"><thead><tr><th>Date</th><th>Type</th><th>Amount (৳)</th><th>Status</th></tr></thead><tbody>';
+            
+            transactions.forEach(transaction => {
+                const date = new Date(transaction.timestamp).toLocaleString();
+                let type = transaction.type.replace('_', ' ').toUpperCase();
+                const amount = transaction.amount + ' ৳';
+                const status = transaction.status || 'completed';
+                const statusClass = status === 'pending' ? 'status-pending' : 
+                                  status === 'approved' ? 'status-approved' : 
+                                  status === 'rejected' ? 'status-rejected' : 'status-joined';
+                const amountClass = transaction.amount > 0 ? 'text-success' : 'text-danger';
+                
+                // Format type for better display
+                type = type.replace('REQUEST', '');
+                
+                html += `
+                    <tr>
+                        <td><small>${date}</small></td>
+                        <td><small>${type}</small></td>
+                        <td class="${amountClass}"><small>${amount}</small></td>
+                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        // Display Tournaments
+        function displayTournaments() {
+            const container = document.getElementById('allTournamentsContainer');
+            
+            if (!tournaments.length) {
+                container.innerHTML = '<p class="text-center">No tournaments available</p>';
+                return;
+            }
+            
+            let html = '';
+            tournaments.forEach(tournament => {
+                const isJoined = tournament.players && tournament.players[currentUser.username];
+                const isDuo = tournament.type === 'duo';
+                const entryFeeDisplay = isDuo ? `৳${tournament.entryFee} (Solo) / ৳${tournament.entryFee * 2} (Duo)` : `৳${tournament.entryFee}`;
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="tournament-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${tournament.title}</h6>
+                                    <p class="small text-muted mb-1">
+                                        <i class="fas fa-calendar"></i> ${new Date(tournament.schedule).toLocaleString()}
+                                    </p>
+                                </div>
+                                <span class="status-badge status-${tournament.status}">
+                                    ${tournament.status.toUpperCase()}
+                                </span>
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-ticket-alt"></i> Entry: <span class="text-warning">${entryFeeDisplay}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-users"></i> Players: ${tournament.joinedPlayers || 0}/${tournament.maxPlayers || 0}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-trophy"></i> Prize: <span class="text-success">৳${tournament.prize}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-skull"></i> Kill: <span class="text-danger">৳${tournament.killReward}</span></p>
+                                </div>
+                            </div>
+                            
+                            <div class="btn-group w-100 mt-2">
+                                ${isJoined ? 
+                                    `<button class="btn btn-success btn-sm" onclick="viewJoinedTournament('${tournament.id}')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>` :
+                                    `<button class="btn btn-ff btn-sm" onclick="showJoinTournamentModal('${tournament.id}')">
+                                        Join Tournament
+                                    </button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = `<div class="row">${html}</div>`;
+        }
+        
+        // Display Live Tournament
+        function displayLiveTournament() {
+            const container = document.getElementById('liveTournamentCard');
+            const liveTournament = tournaments.find(t => t.status === 'live');
+            
+            if (!liveTournament) {
+                container.innerHTML = '<p class="text-center">No live tournament at the moment</p>';
+                return;
+            }
+            
+            const isJoined = liveTournament.players && liveTournament.players[currentUser.username];
+            const isDuo = liveTournament.type === 'duo';
+            const entryFeeDisplay = isDuo ? `৳${liveTournament.entryFee} (Solo) / ৳${liveTournament.entryFee * 2} (Duo)` : `৳${liveTournament.entryFee}`;
+            
+            container.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-fire text-danger"></i> ${liveTournament.title}</h5>
+                    <span class="live-badge">LIVE NOW</span>
+                </div>
+                
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Entry Fee:</strong> <span class="text-danger">${entryFeeDisplay}</span></p>
+                        <p class="mb-1"><strong>Players:</strong> ${liveTournament.joinedPlayers || 0}/${liveTournament.maxPlayers || 0}</p>
+                        <p class="mb-1"><strong>Type:</strong> ${liveTournament.type}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="winner-prize">
+                            <h6 class="text-warning mb-1">🏆 Prize: ৳${liveTournament.prize}</h6>
+                            <p class="mb-0 small">Kill Reward: ৳${liveTournament.killReward}/kill</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    ${isJoined ? 
+                        `<div class="btn-group">
+                            ${liveTournament.roomId ? `
+                                <button class="btn btn-success btn-sm" onclick="viewRoomDetails('${liveTournament.id}')">
+                                    <i class="fas fa-door-open"></i> View Room
+                                </button>
+                            ` : `
+                                <button class="btn btn-info btn-sm" onclick="viewJoinedTournament('${liveTournament.id}')">
+                                    <i class="fas fa-eye"></i> View Status
+                                </button>
+                            `}
+                        </div>
+                        <p class="small text-muted mt-1">You have joined this tournament</p>` :
+                        `<button class="btn btn-ff btn-sm disabled">
+                            <i class="fas fa-times-circle"></i> Cannot Join (Tournament is LIVE)
+                        </button>
+                        <p class="small text-muted mt-1">You can only join upcoming tournaments</p>`
+                    }
+                </div>
+            `;
+        }
+        
+        // Display Upcoming Tournaments
+        function displayUpcomingTournaments() {
+            const container = document.getElementById('upcomingTournaments');
+            const upcoming = tournaments.filter(t => t.status === 'upcoming').slice(0, 3);
+            
+            if (!upcoming.length) {
+                container.innerHTML = '<p class="text-center">No upcoming tournaments</p>';
+                return;
+            }
+            
+            let html = '';
+            upcoming.forEach(tournament => {
+                const isJoined = tournament.players && tournament.players[currentUser.username];
+                const isDuo = tournament.type === 'duo';
+                const entryFeeDisplay = isDuo ? `৳${tournament.entryFee} (Solo/Duo)` : `৳${tournament.entryFee}`;
+                
+                html += `
+                    <div class="col-md-4 mb-3">
+                        <div class="tournament-card">
+                            <h6>${tournament.title}</h6>
+                            <p class="small mb-1"><i class="fas fa-clock"></i> ${new Date(tournament.schedule).toLocaleTimeString()}</p>
+                            <p class="small mb-1"><i class="fas fa-ticket-alt"></i> Entry: ${entryFeeDisplay}</p>
+                            <p class="small mb-1"><i class="fas fa-trophy"></i> Prize: ৳${tournament.prize}</p>
+                            <button class="btn btn-ff btn-sm w-100 mt-2" onclick="showJoinTournamentModal('${tournament.id}')">
+                                ${isJoined ? 'Joined' : 'Join'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = `<div class="row">${html}</div>`;
+        }
+        
+        // Show Section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('#mainContent > section').forEach(section => {
+                section.classList.add('d-none');
+            });
+            
+            // Show selected section
+            const section = document.getElementById(sectionName + 'Section');
+            if (section) {
+                section.classList.remove('d-none');
+                
+                // Load section data
+                if (sectionName === 'tournaments' && isLoggedIn) {
+                    displayTournaments();
+                } else if (sectionName === 'history' && isLoggedIn) {
+                    displayTransactions(userTransactions);
+                } else if (sectionName === 'profile' && isLoggedIn) {
+                    loadProfileSection();
+                }
+            }
+        }
+        
+        // Load Profile Section
+        function loadProfileSection() {
+            const profileCard = document.getElementById('profileCard');
+            const accountInfo = document.getElementById('accountInfo');
+            
+            if (!currentUser) return;
+            
+            profileCard.innerHTML = `
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User" class="user-avatar mb-2">
+                <h6>${currentUser.name || currentUser.username}</h6>
+                <p class="small text-muted">FF ID: ${currentUser.ffid || 'N/A'}</p>
+                
+                <button class="btn btn-ff btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#updateProfileModal">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+            `;
+            
+            accountInfo.innerHTML = `
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <p class="small mb-1"><strong>Username:</strong><br>${currentUser.username}</p>
+                        <p class="small mb-1"><strong>Balance:</strong><br><span class="text-success">৳${currentUser.balance}</span></p>
+                        <p class="small mb-1"><strong>Total Kills:</strong><br>${currentUser.kills || 0}</p>
+                    </div>
+                    <div class="col-6">
+                        <p class="small mb-1"><strong>Total Wins:</strong><br>${currentUser.wins || 0}</p>
+                        <p class="small mb-1"><strong>Join Date:</strong><br>${new Date(currentUser.joinDate).toLocaleDateString()}</p>
+                        <p class="small mb-1"><strong>Phone:</strong><br>${currentUser.phone || 'N/A'}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Load active tournaments
+            displayActiveTournaments();
+        }
+        
+        // Logout
+        function logout() {
+            currentUser = null;
+            isLoggedIn = false;
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('guestView').classList.remove('d-none');
+            document.getElementById('userDashboard').classList.add('d-none');
+            document.getElementById('userBalanceCard').classList.add('d-none');
+            document.getElementById('loggedInUser').classList.add('d-none');
+            document.getElementById('loginBtn').classList.remove('d-none');
+            document.getElementById('floatingWithdrawBtn').classList.add('d-none');
+            
+            showSection('home');
+            showSuccess('Logged out successfully');
+        }
+        
+        // Helper Functions
+        function showSuccess(message) {
+            document.getElementById('successToastBody').textContent = message;
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            toast.show();
+        }
+        
+        function showError(message) {
+            document.getElementById('errorToastBody').textContent = message;
+            const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+            toast.show();
+        }
+        
+        function loadNotices() {
+            // Already handled in setupFirebaseListeners
+        }
+        
+        function filterTournaments() {
+            const filter = document.getElementById('tournamentFilter').value;
+            const container = document.getElementById('allTournamentsContainer');
+            
+            if (filter === 'all') {
+                displayTournaments();
+                return;
+            }
+            
+            const filtered = tournaments.filter(t => t.type === filter);
+            
+            if (!filtered.length) {
+                container.innerHTML = `<p class="text-center">No ${filter} tournaments found</p>`;
+                return;
+            }
+            
+            let html = '';
+            filtered.forEach(tournament => {
+                const isJoined = tournament.players && tournament.players[currentUser.username];
+                const isDuo = tournament.type === 'duo';
+                const entryFeeDisplay = isDuo ? `৳${tournament.entryFee} (Solo) / ৳${tournament.entryFee * 2} (Duo)` : `৳${tournament.entryFee}`;
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="tournament-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${tournament.title}</h6>
+                                    <p class="small text-muted mb-1">
+                                        <i class="fas fa-calendar"></i> ${new Date(tournament.schedule).toLocaleString()}
+                                    </p>
+                                </div>
+                                <span class="status-badge status-${tournament.status}">
+                                    ${tournament.status.toUpperCase()}
+                                </span>
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-ticket-alt"></i> Entry: <span class="text-warning">${entryFeeDisplay}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-users"></i> Players: ${tournament.joinedPlayers || 0}/${tournament.maxPlayers || 0}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-trophy"></i> Prize: <span class="text-success">৳${tournament.prize}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-skull"></i> Kill: <span class="text-danger">৳${tournament.killReward}</span></p>
+                                </div>
+                            </div>
+                            
+                            <div class="btn-group w-100 mt-2">
+                                ${isJoined ? 
+                                    `<button class="btn btn-success btn-sm" onclick="viewJoinedTournament('${tournament.id}')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>` :
+                                    `<button class="btn btn-ff btn-sm" onclick="showJoinTournamentModal('${tournament.id}')">
+                                        Join Tournament
+                                    </button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = `<div class="row">${html}</div>`;
+        }
+        
+        function searchTournaments() {
+            const searchTerm = document.getElementById('searchTournament').value.toLowerCase();
+            const container = document.getElementById('allTournamentsContainer');
+            
+            if (!searchTerm) {
+                displayTournaments();
+                return;
+            }
+            
+            const filtered = tournaments.filter(t => 
+                t.title.toLowerCase().includes(searchTerm) ||
+                t.type.toLowerCase().includes(searchTerm)
+            );
+            
+            if (!filtered.length) {
+                container.innerHTML = `<p class="text-center">No tournaments found matching "${searchTerm}"</p>`;
+                return;
+            }
+            
+            let html = '';
+            filtered.forEach(tournament => {
+                const isJoined = tournament.players && tournament.players[currentUser.username];
+                const isDuo = tournament.type === 'duo';
+                const entryFeeDisplay = isDuo ? `৳${tournament.entryFee} (Solo) / ৳${tournament.entryFee * 2} (Duo)` : `৳${tournament.entryFee}`;
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="tournament-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${tournament.title}</h6>
+                                    <p class="small text-muted mb-1">
+                                        <i class="fas fa-calendar"></i> ${new Date(tournament.schedule).toLocaleString()}
+                                    </p>
+                                </div>
+                                <span class="status-badge status-${tournament.status}">
+                                    ${tournament.status.toUpperCase()}
+                                </span>
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-ticket-alt"></i> Entry: <span class="text-warning">${entryFeeDisplay}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-users"></i> Players: ${tournament.joinedPlayers || 0}/${tournament.maxPlayers || 0}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="small mb-1"><i class="fas fa-trophy"></i> Prize: <span class="text-success">৳${tournament.prize}</span></p>
+                                    <p class="small mb-1"><i class="fas fa-skull"></i> Kill: <span class="text-danger">৳${tournament.killReward}</span></p>
+                                </div>
+                            </div>
+                            
+                            <div class="btn-group w-100 mt-2">
+                                ${isJoined ? 
+                                    `<button class="btn btn-success btn-sm" onclick="viewJoinedTournament('${tournament.id}')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>` :
+                                    `<button class="btn btn-ff btn-sm" onclick="showJoinTournamentModal('${tournament.id}')">
+                                        Join Tournament
+                                    </button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = `<div class="row">${html}</div>`;
+        }
+        
+        function filterTransactions() {
+            const type = document.getElementById('transactionTypeFilter').value;
+            const date = document.getElementById('transactionDateFilter').value;
+            
+            let filtered = userTransactions;
+            
+            if (type !== 'all') {
+                filtered = filtered.filter(t => {
+                    if (type === 'recharge') return t.type === 'recharge_request';
+                    if (type === 'withdrawal') return t.type === 'withdrawal_request';
+                    if (type === 'tournament') return t.type === 'tournament_entry';
+                    if (type === 'winning') return t.type === 'tournament_winning';
+                    if (type === 'kill') return t.type === 'kill_reward';
+                    return true;
+                });
+            }
+            
+            if (date) {
+                const selectedDate = new Date(date).toDateString();
+                filtered = filtered.filter(t => {
+                    const transactionDate = new Date(t.timestamp).toDateString();
+                    return transactionDate === selectedDate;
+                });
+            }
+            
+            displayTransactions(filtered);
+        }
+        
+        // Make functions available globally
+        window.userLogin = userLogin;
+        window.registerUser = registerUser;
+        window.submitRechargeRequest = submitRechargeRequest;
+        window.updateProfile = updateProfile;
+        window.joinTournament = joinTournament;
+        window.viewRoomDetails = viewRoomDetails;
+        window.viewJoinedTournament = viewJoinedTournament;
+        window.showSection = showSection;
+        window.logout = logout;
+        window.filterTournaments = filterTournaments;
+        window.searchTournaments = searchTournaments;
+        window.filterTransactions = filterTransactions;
+        window.showWithdrawModal = showWithdrawModal;
+        window.submitWithdrawRequest = submitWithdrawRequest;
+        window.showPaymentNumber = showPaymentNumber;
+        window.showJoinTournamentModal = showJoinTournamentModal;
+        window.copyRoomDetails = copyRoomDetails;
+        window.checkRoomDetails = checkRoomDetails;
+    </script>
+</body>
+</html>
