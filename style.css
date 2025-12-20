@@ -1,0 +1,350 @@
+/* ============ MAIN STYLES ============ */
+:root {
+    --primary: #ff6600;
+    --secondary: #1a1a2e;
+    --accent: #00ccff;
+    --success: #00ff88;
+    --warning: #ffcc00;
+    --danger: #ff3300;
+}
+
+body {
+    background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+
+/* ============ HEADER & NAV ============ */
+.header-marquee {
+    background: linear-gradient(90deg, var(--primary), var(--danger));
+    color: white;
+    padding: 8px 0;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.main-nav {
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid var(--primary);
+}
+
+.nav-brand {
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 22px;
+}
+
+.nav-brand span {
+    color: var(--accent);
+}
+
+.nav-link {
+    color: #fff !important;
+    margin: 0 5px;
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--accent) !important;
+}
+
+/* ============ CARDS ============ */
+.balance-card {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 5px 15px rgba(255, 102, 0, 0.2);
+}
+
+.tournament-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 102, 0, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+}
+
+.tournament-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3);
+}
+
+/* ============ BADGES ============ */
+.live-badge {
+    background: linear-gradient(90deg, var(--danger), var(--primary));
+    color: white;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.status-pending { background: #ffcc00; color: black; }
+.status-approved { background: #00cc66; color: white; }
+.status-rejected { background: #ff3300; color: white; }
+.status-live { background: #ff3300; color: white; }
+.status-upcoming { background: #00a8ff; color: white; }
+.status-completed { background: #00cc66; color: white; }
+.status-joined { background: #cce5ff; color: #004085; }
+
+/* ============ BUTTONS ============ */
+.btn-ff {
+    background: linear-gradient(90deg, var(--primary), var(--danger));
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.btn-ff:hover {
+    background: linear-gradient(90deg, var(--danger), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 102, 0, 0.4);
+}
+
+/* ============ MODALS ============ */
+.login-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 6px;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(255, 102, 0, 0.25);
+    color: white;
+}
+
+/* ============ USER ELEMENTS ============ */
+.user-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+}
+
+.loading-spinner {
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top: 3px solid var(--primary);
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============ TOURNAMENT ELEMENTS ============ */
+.kill-reward {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+.winner-prize {
+    background: linear-gradient(135deg, rgba(255, 204, 0, 0.15), rgba(255, 102, 0, 0.15));
+    border: 2px solid var(--warning);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.countdown-timer {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+}
+
+/* ============ PAYMENT METHODS ============ */
+.payment-method-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-right: 5px;
+}
+
+.bkash { background: #e2136e; color: white; }
+.nagad { background: #f8a01c; color: #000; }
+.rocket { background: #5d2d8d; color: white; }
+.upay { background: #00a859; color: white; }
+
+/* ============ WITHDRAW BUTTON ============ */
+.withdraw-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    border-radius: 50px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* ============ PLAYER INPUTS ============ */
+.player-input-group {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.player-label {
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+/* ============ ROOM DETAILS ============ */
+.room-details-box {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.room-id {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00ff88;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.room-password {
+    font-size: 20px;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+.copy-btn {
+    background: linear-gradient(90deg, #00ccff, #0099cc);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.copy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+}
+
+/* ============ TOURNAMENT TYPES ============ */
+.tournament-type-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 5px;
+}
+
+.type-solo { background: #3498db; color: white; }
+.type-duo { background: #9b59b6; color: white; }
+.type-squad { background: #e74c3c; color: white; }
+
+/* ============ NOTIFICATIONS ============ */
+.notification-badge {
+    background: var(--danger);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
+}
+
+/* ============ FOOTER ============ */
+footer {
+    background: var(--secondary);
+    border-top: 2px solid var(--primary);
+    margin-top: 30px;
+    padding: 15px 0;
+}
+
+/* ============ WITHDRAWAL MODAL SPECIFIC ============ */
+#currentBalanceInModal {
+    color: #00ff88;
+    font-size: 18px;
+}
+
+.balance-warning {
+    animation: blink 1s infinite;
+    border: 2px solid #ff3300;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .nav-link {
+        margin: 3px 0;
+        padding: 5px 10px;
+    }
+    
+    .tournament-card {
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .withdraw-btn {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    
+    .room-id {
+        font-size: 18px;
+    }
+    
+    .room-password {
+        font-size: 16px;
+    }
+}
